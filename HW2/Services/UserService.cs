@@ -18,7 +18,7 @@ public class UserService(
     private readonly IConfiguration _configuration = configuration;
     private readonly IPasswordHasher<User> _passwordHasher = passwordHasher;
 
-    public async Task<UserResponse> RegisterAsync(RegisterRequest request)
+    public async Task<RegisterResponse> RegisterAsync(RegisterRequest request)
     {
         if (await _repository.ExistsWithUsernameAsync(request.Username))
         {
@@ -38,14 +38,19 @@ public class UserService(
         user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
 
         var created = await _repository.AddAsync(user);
-        return ToResponse(created);
+        return new RegisterResponse
+        {
+            Token = GenerateToken(created),
+            ExpiresInMinutes = int.Parse(_configuration["Jwt:ExpiresInMinutes"] ?? "60"),
+            User = ToResponse(created)
+        };
     }
 
     public async Task<LoginResponse> LoginAsync(LoginRequest request)
     {
         var user = await _repository.GetByUsernameOrEmailAsync(request.UsernameOrEmail);
         if (user is null ||
-            _passwordHasher.VerifyHashedPassword(user, request.Password, user.PasswordHash) != PasswordVerificationResult.Success)
+            _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password) != PasswordVerificationResult.Success)
         {
             throw new UnauthorizedAccessException("Invalid username/email or password.");
         }

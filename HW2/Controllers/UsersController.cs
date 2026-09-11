@@ -31,8 +31,8 @@ public class UsersController(IUserService userService) : ControllerBase
     {
         try
         {
-            var user = await _userService.RegisterAsync(request);
-            return CreatedAtAction(nameof(GetById), new { id = user.Id }, user);
+            var registerResponse = await _userService.RegisterAsync(request);
+            return Created(nameof(GetById), registerResponse);
         }
         catch (InvalidOperationException ex)
         {
