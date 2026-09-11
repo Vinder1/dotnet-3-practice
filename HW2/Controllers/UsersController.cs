@@ -21,7 +21,7 @@ public class UsersController(IUserService userService) : ControllerBase
         }
         catch (UnauthorizedAccessException)
         {
-            return Unauthorized("Неверное имя пользователя/почта или пароль.");
+            return Unauthorized("Invalid username/email or password.");
         }
     }
 

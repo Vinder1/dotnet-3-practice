@@ -22,12 +22,12 @@ public class UserService(
     {
         if (await _repository.ExistsWithUsernameAsync(request.Username))
         {
-            throw new InvalidOperationException("Пользователь с таким именем уже существует.");
+            throw new InvalidOperationException("A user with this username already exists.");
         }
 
         if (await _repository.ExistsWithEmailAsync(request.Email))
         {
-            throw new InvalidOperationException("Пользователь с такой почтой уже существует.");
+            throw new InvalidOperationException("A user with this email already exists.");
         }
 
         var user = new User
@@ -47,7 +47,7 @@ public class UserService(
         if (user is null ||
             _passwordHasher.VerifyHashedPassword(user, request.Password, user.PasswordHash) != PasswordVerificationResult.Success)
         {
-            throw new UnauthorizedAccessException("Неверное имя пользователя/почта или пароль.");
+            throw new UnauthorizedAccessException("Invalid username/email or password.");
         }
 
         return new LoginResponse
@@ -61,21 +61,21 @@ public class UserService(
     public async Task<UserResponse> GetByIdAsync(int id)
     {
         var user = await _repository.GetByIdAsync(id)
-            ?? throw new KeyNotFoundException("Пользователь не найден.");
+            ?? throw new KeyNotFoundException("User not found.");
         return ToResponse(user);
     }
 
     public async Task<UserResponse> UpdateAsync(int id, UpdateUserRequest request)
     {
         var user = await _repository.GetByIdAsync(id)
-            ?? throw new KeyNotFoundException("Пользователь не найден.");
+            ?? throw new KeyNotFoundException("User not found.");
 
         if (!string.IsNullOrWhiteSpace(request.Username))
         {
             if (user.Username == request.Username ||
                 await _repository.ExistsWithUsernameAsync(request.Username))
             {
-                throw new InvalidOperationException("Пользователь с таким именем уже существует.");
+                throw new InvalidOperationException("A user with this username already exists.");
             }
 
             user.Username = request.Username;
@@ -86,7 +86,7 @@ public class UserService(
             if (user.Email == request.Email ||
                 await _repository.ExistsWithEmailAsync(request.Email))
             {
-                throw new InvalidOperationException("Пользователь с такой почтой уже существует.");
+                throw new InvalidOperationException("A user with this email already exists.");
             }
 
             user.Email = request.Email;
@@ -109,7 +109,7 @@ public class UserService(
     private string GenerateToken(User user)
     {
         var key = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(_configuration["Jwt:Key"] ?? throw new InvalidOperationException("Jwt:Key не задан.")));
+            Encoding.UTF8.GetBytes(_configuration["Jwt:Key"] ?? throw new InvalidOperationException("Jwt:Key is not set.")));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var claims = new[]
