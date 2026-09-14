@@ -12,24 +12,9 @@ public class UserRepository(AppDbContext context) : IUserRepository
         return await _context.Users.FindAsync(id);
     }
 
-    public async Task<User?> GetByUsernameAsync(string username)
+    public Task<User?> GetByUsernameOrEmailAsync(string usernameOrEmail)
     {
-        return await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
-    }
-
-    public async Task<User?> GetByEmailAsync(string email)
-    {
-        return await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
-    }
-
-    public async Task<User?> GetByUsernameOrEmailAsync(string usernameOrEmail)
-    {
-        return await _context.Users.FirstOrDefaultAsync(u => u.Username == usernameOrEmail || u.Email == usernameOrEmail);
-    }
-
-    public async Task<IEnumerable<User>> GetAllAsync()
-    {
-        return await _context.Users.ToListAsync();
+        return _context.Users.FirstOrDefaultAsync(u => u.Username == usernameOrEmail || u.Email == usernameOrEmail);
     }
 
     public async Task<User> AddAsync(User user)
@@ -59,13 +44,13 @@ public class UserRepository(AppDbContext context) : IUserRepository
         return true;
     }
 
-    public async Task<bool> ExistsWithUsernameAsync(string username)
+    public Task<bool> ExistsWithUsernameAsync(string username)
     {
-        return await _context.Users.AnyAsync(u => u.Username == username);
+        return _context.Users.AnyAsync(u => u.Username == username);
     }
 
-    public async Task<bool> ExistsWithEmailAsync(string email)
+    public Task<bool> ExistsWithEmailAsync(string email)
     {
-        return await _context.Users.AnyAsync(u => u.Email == email);
+        return _context.Users.AnyAsync(u => u.Email == email);
     }
 }
