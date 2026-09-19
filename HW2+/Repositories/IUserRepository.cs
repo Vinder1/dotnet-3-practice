@@ -4,6 +4,11 @@ namespace HW2.Repositories;
 
 public interface IUserRepository
 {
+    Task<IReadOnlyCollection<User>> GetAllAsync(
+        DateTime? createdFrom = null,
+        DateTime? createdTo = null,
+        DateTime? updatedFrom = null,
+        DateTime? updatedTo = null);
     Task<User?> GetByIdAsync(int id);
     Task<User?> GetByUsernameOrEmailAsync(string usernameOrEmail);
     Task<User> AddAsync(User user);

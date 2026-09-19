@@ -1,21 +1,17 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 using HW2.DTOs;
 using HW2.Models;
 using HW2.Repositories;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.IdentityModel.Tokens;
 
 namespace HW2.Services;
 
 public class UserService(
     IUserRepository repository,
-    IConfiguration configuration,
-    IPasswordHasher<User>  passwordHasher) : IUserService
+    ITokenService tokenService,
+    IPasswordHasher<User> passwordHasher) : IUserService
 {
     private readonly IUserRepository _repository = repository;
-    private readonly IConfiguration _configuration = configuration;
+    private readonly ITokenService _tokenService = tokenService;
     private readonly IPasswordHasher<User> _passwordHasher = passwordHasher;
 
     public async Task<RegisterResponse> RegisterAsync(RegisterRequest request)
@@ -33,17 +29,14 @@ public class UserService(
         var user = new User
         {
             Username = request.Username,
-            Email = request.Email
+            Email = request.Email,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
         };
         user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
 
         var created = await _repository.AddAsync(user);
-        return new RegisterResponse
-        {
-            Token = GenerateToken(created),
-            ExpiresInMinutes = int.Parse(_configuration["Jwt:ExpiresInMinutes"] ?? "60"),
-            User = ToResponse(created)
-        };
+        return ToRegisterResponse(created);
     }
 
     public async Task<LoginResponse> LoginAsync(LoginRequest request)
@@ -55,19 +48,25 @@ public class UserService(
             throw new UnauthorizedAccessException("Invalid username/email or password.");
         }
 
-        return new LoginResponse
-        {
-            Token = GenerateToken(user),
-            ExpiresInMinutes = int.Parse(_configuration["Jwt:ExpiresInMinutes"] ?? "60"),
-            User = ToResponse(user)
-        };
+        return ToLoginResponse(user);
+    }
+
+    public async Task<IReadOnlyCollection<UserResponse>> GetUsersAsync(FilterUsersRequest filter)
+    {
+        var users = await _repository.GetAllAsync(
+            filter.CreatedFrom,
+            filter.CreatedTo,
+            filter.UpdatedFrom,
+            filter.UpdatedTo);
+    
+        return users.Select(ToUserResponse).ToList();
     }
 
     public async Task<UserResponse> GetByIdAsync(int id)
     {
         var user = await _repository.GetByIdAsync(id)
             ?? throw new KeyNotFoundException("User not found.");
-        return ToResponse(user);
+        return ToUserResponse(user);
     }
 
     public async Task<UserResponse> UpdateAsync(int id, UpdateUserRequest request)
@@ -102,8 +101,10 @@ public class UserService(
             user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
         }
 
+        user.UpdatedAt = DateTime.UtcNow;
+
         var updated = await _repository.UpdateAsync(user);
-        return ToResponse(updated);
+        return ToUserResponse(updated);
     }
 
     public async Task<bool> DeleteAsync(int id)
@@ -111,37 +112,37 @@ public class UserService(
         return await _repository.DeleteAsync(id);
     }
 
-    private string GenerateToken(User user)
+    private RegisterResponse ToRegisterResponse(User user)
     {
-        var key = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(_configuration["Jwt:Key"] ?? throw new InvalidOperationException("Jwt:Key is not set.")));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-        var claims = new[]
+        var token = _tokenService.Generate(user);
+        return new RegisterResponse
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new Claim(JwtRegisteredClaimNames.UniqueName, user.Username),
-            new Claim(JwtRegisteredClaimNames.Email, user.Email)
+            Token = token.Token,
+            ExpiresInMinutes = token.ExpiresInMinutes,
+            User = ToUserResponse(user)
         };
-
-        var token = new JwtSecurityToken(
-            issuer: _configuration["Jwt:Issuer"],
-            audience: _configuration["Jwt:Audience"],
-            claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(int.Parse(_configuration["Jwt:ExpiresInMinutes"] ?? "60")),
-            signingCredentials: creds);
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    private static UserResponse ToResponse(User user)
+    private LoginResponse ToLoginResponse(User user)
+    {
+        var token = _tokenService.Generate(user);
+        return new LoginResponse
+        {
+            Token = token.Token,
+            ExpiresInMinutes = token.ExpiresInMinutes,
+            User = ToUserResponse(user)
+        };
+    }
+
+    private static UserResponse ToUserResponse(User user)
     {
         return new UserResponse
         {
             Id = user.Id,
             Username = user.Username,
             Email = user.Email,
-            CreatedAt = user.CreatedAt
+            CreatedAt = user.CreatedAt,
+            UpdatedAt = user.UpdatedAt
         };
     }
 }

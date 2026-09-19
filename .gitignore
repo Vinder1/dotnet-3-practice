@@ -138,6 +138,22 @@ _ReSharper*/
 *.[Rr]e[Ss]harper
 *.DotSettings.user
 
+# JetBrains Rider
+.idea/
+.idea/*
+!.idea/.gitignore
+!.idea/.name
+!.idea/runConfigurations/
+!.idea/inspectionProfiles/
+*.sln.iml
+*.ipr
+*.iws
+*.rider
+.Rider/
+.rider/
+**/.idea/**
+**/*.iml
+
 # TeamCity is a build add-in
 _TeamCity*
 
@@ -272,6 +288,13 @@ ServiceFabricBackup/
 *.ldf
 *.ndf
 
+# Local database files (SQLite, etc.)
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
 # Business Intelligence projects
 *.rdl.data
 *.bim.layout
@@ -400,10 +423,6 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
-
-# JetBrains Rider
-*.sln.iml
-.idea/
 
 ##
 ## Visual studio for Mac

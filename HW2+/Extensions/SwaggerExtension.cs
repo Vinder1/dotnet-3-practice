@@ -17,8 +17,8 @@ public static class SwaggerExtension
 
             options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
             {
-                Name = builder.Configuration["Swagger:Definition:Name"],
-                Description = builder.Configuration["Swagger:Definition:Description"],
+                Name = "Swagger",
+                Description = "Put your token here",
                 Type = SecuritySchemeType.Http,
                 Scheme = "Bearer",
                 BearerFormat = "JWT",

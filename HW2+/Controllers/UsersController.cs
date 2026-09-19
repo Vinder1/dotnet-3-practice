@@ -7,41 +7,18 @@ namespace HW2.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class UsersController(IUserService userService) : ControllerBase
 {
     private readonly IUserService _userService = userService;
 
-    [HttpPost("login")]
-    [AllowAnonymous]
-    public async Task<IActionResult> Login([FromBody] LoginRequest request)
+    [HttpGet]
+    public async Task<IActionResult> GetAll([FromQuery] FilterUsersRequest filter)
     {
-        try
-        {
-            return Ok(await _userService.LoginAsync(request));
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Unauthorized("Invalid username/email or password.");
-        }
-    }
-
-    [HttpPost("register")]
-    [AllowAnonymous]
-    public async Task<IActionResult> Register([FromBody] RegisterRequest request)
-    {
-        try
-        {
-            var registerResponse = await _userService.RegisterAsync(request);
-            return Created(nameof(GetById), registerResponse);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(ex.Message);
-        }
+        return Ok(await _userService.GetUsersAsync(filter));
     }
 
     [HttpGet("{id:int}")]
-    [Authorize]
     public async Task<IActionResult> GetById(int id)
     {
         try
@@ -55,7 +32,6 @@ public class UsersController(IUserService userService) : ControllerBase
     }
 
     [HttpPut("{id:int}")]
-    [Authorize]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateUserRequest request)
     {
         try
@@ -73,7 +49,6 @@ public class UsersController(IUserService userService) : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
-    [Authorize]
     public async Task<IActionResult> Delete(int id)
     {
         var deleted = await _userService.DeleteAsync(id);
