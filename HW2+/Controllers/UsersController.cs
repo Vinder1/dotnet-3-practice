@@ -8,9 +8,10 @@ namespace HW2.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class UsersController(IUserService userService) : ControllerBase
+public class UsersController(IUserService userService, ILogger<UsersController> logger) : ControllerBase
 {
     private readonly IUserService _userService = userService;
+    private readonly ILogger<UsersController> _logger = logger;
 
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] FilterUsersRequest filter)
@@ -25,8 +26,9 @@ public class UsersController(IUserService userService) : ControllerBase
         {
             return Ok(await _userService.GetByIdAsync(id));
         }
-        catch (KeyNotFoundException)
+        catch (KeyNotFoundException exception)
         {
+            _logger.LogWarning(exception, "User {UserId} not found", id);
             return NotFound();
         }
     }
@@ -38,12 +40,14 @@ public class UsersController(IUserService userService) : ControllerBase
         {
             return Ok(await _userService.UpdateAsync(id, request));
         }
-        catch (KeyNotFoundException)
+        catch (KeyNotFoundException exception)
         {
+            _logger.LogWarning(exception, "User {UserId} not found, update rejected", id);
             return NotFound();
         }
         catch (InvalidOperationException ex)
         {
+            _logger.LogWarning(ex, "Update of user {UserId} conflicts with existing user", id);
             return Conflict(ex.Message);
         }
     }

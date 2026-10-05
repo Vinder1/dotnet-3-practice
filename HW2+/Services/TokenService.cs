@@ -6,14 +6,21 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace HW2.Services;
 
-public class TokenService(IConfiguration configuration) : ITokenService
+public class TokenService(IConfiguration configuration, ILogger<TokenService> logger) : ITokenService
 {
     private readonly IConfiguration _configuration = configuration;
+    private readonly ILogger<TokenService> _logger = logger;
 
     public TokenResult Generate(User user)
     {
-        var key = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(_configuration["Jwt:Key"] ?? throw new InvalidOperationException("Jwt:Key is not set.")));
+        var configuredKey = _configuration["Jwt:Key"];
+        if (string.IsNullOrWhiteSpace(configuredKey))
+        {
+            _logger.LogError("Jwt:Key is not configured, token cannot be generated");
+            throw new InvalidOperationException("Jwt:Key is not set.");
+        }
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuredKey));
 
         var claims = new[]
         {
@@ -30,6 +37,10 @@ public class TokenService(IConfiguration configuration) : ITokenService
             claims: claims,
             expires: DateTime.UtcNow.AddMinutes(expiresInMinutes),
             signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256));
+
+        _logger.LogInformation(
+            "JWT token generated for user {UserId}, expires in {ExpiresInMinutes} minutes",
+            user.Id, expiresInMinutes);
 
         return new TokenResult(new JwtSecurityTokenHandler().WriteToken(token), expiresInMinutes);
     }

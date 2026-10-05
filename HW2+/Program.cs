@@ -1,4 +1,5 @@
 using HW2.Extensions;
+using HW2.Middlewares;
 using HW2.Models;
 using HW2.Repositories;
 using HW2.Services;
@@ -12,6 +13,7 @@ builder.Services.AddControllers();
 
 builder.AddCustomSwagger();
 builder.AddCustomScalar();
+builder.AddCustomSerilog();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -27,9 +29,24 @@ var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
+    var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Startup");
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();
+
+    try
+    {
+        logger.LogInformation("Applying database migrations...");
+        db.Database.Migrate();
+        logger.LogInformation("Database migrations applied");
+    }
+    catch (Exception exception)
+    {
+        logger.LogCritical(exception, "Database migration failed, application cannot start");
+        throw;
+    }
 }
+
+app.UseCustomSerilog();
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseHttpsRedirection();
 app.UseAuthentication();

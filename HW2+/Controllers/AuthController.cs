@@ -7,9 +7,10 @@ namespace HW2.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AuthController(IUserService userService) : ControllerBase
+public class AuthController(IUserService userService, ILogger<AuthController> logger) : ControllerBase
 {
     private readonly IUserService _userService = userService;
+    private readonly ILogger<AuthController> _logger = logger;
 
     [HttpPost("login")]
     [AllowAnonymous]
@@ -19,8 +20,9 @@ public class AuthController(IUserService userService) : ControllerBase
         {
             return Ok(await _userService.LoginAsync(request));
         }
-        catch (UnauthorizedAccessException)
+        catch (UnauthorizedAccessException exception)
         {
+            _logger.LogWarning(exception, "Login request denied");
             return Unauthorized("Invalid username/email or password.");
         }
     }
@@ -36,6 +38,7 @@ public class AuthController(IUserService userService) : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
+            _logger.LogWarning(ex, "Registration request conflicts with existing user");
             return Conflict(ex.Message);
         }
     }

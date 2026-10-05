@@ -3,9 +3,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HW2.Repositories;
 
-public class UserRepository(AppDbContext context) : IUserRepository
+public class UserRepository(AppDbContext context, ILogger<UserRepository> logger) : IUserRepository
 {
     private readonly AppDbContext _context = context;
+    private readonly ILogger<UserRepository> _logger = logger;
 
     public async Task<IReadOnlyCollection<User>> GetAllAsync(
         DateTime? createdFrom = null,
@@ -41,9 +42,10 @@ public class UserRepository(AppDbContext context) : IUserRepository
                 .OrderBy(u => u.Id)
                 .ToListAsync();
         }
-        catch (ArgumentException)
+        catch (ArgumentException exception)
         {
-            throw new ArgumentException("Invalid time format.");
+            _logger.LogWarning(exception, "Invalid time range used in GetAllAsync query");
+            throw new ArgumentException("Invalid time format.", exception);
         }
     }
 
@@ -61,6 +63,9 @@ public class UserRepository(AppDbContext context) : IUserRepository
     {
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
+
+        _logger.LogDebug("User {UserId} persisted", user.Id);
+
         return user;
     }
 
@@ -68,6 +73,9 @@ public class UserRepository(AppDbContext context) : IUserRepository
     {
         _context.Users.Update(user);
         await _context.SaveChangesAsync();
+
+        _logger.LogDebug("User {UserId} changes persisted", user.Id);
+
         return user;
     }
 
@@ -76,11 +84,15 @@ public class UserRepository(AppDbContext context) : IUserRepository
         var user = await _context.Users.FindAsync(id);
         if (user is null)
         {
+            _logger.LogDebug("Nothing to delete, user {UserId} does not exist", id);
             return false;
         }
 
         _context.Users.Remove(user);
         await _context.SaveChangesAsync();
+
+        _logger.LogDebug("User {UserId} removed from database", id);
+
         return true;
     }
 
