@@ -79,6 +79,29 @@ services:
     ports:
       - "8080:8080"
 
+  approval-service:
+    build:
+      context: ./ApprovalService
+      dockerfile: Dockerfile
+    container_name: approval-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      opensearch:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${APP_ENVIRONMENT:-Production}
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=${POSTGRES_PORT};Database=${APPROVAL_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      Jwt__Key: ${JWT_SECRET_KEY}
+      UsersService__BaseUrl: "http://backend:8080"
+      OpenSearch__Enabled: "true"
+      OpenSearch__NodeUris__0: "http://opensearch:9200"
+    ports:
+      - "8081:8080"
+
 volumes:
   pgdata:
   opensearchdata:
