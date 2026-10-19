@@ -1,0 +1,19 @@
+using RegistrationCoreService.Models;
+
+namespace RegistrationCoreService.Repositories;
+
+public interface IUserRepository
+{
+    Task<IReadOnlyCollection<User>> GetAllAsync(
+        DateTime? createdFrom = null,
+        DateTime? createdTo = null,
+        DateTime? updatedFrom = null,
+        DateTime? updatedTo = null);
+    Task<User?> GetByIdAsync(int id);
+    Task<User?> GetByUsernameOrEmailAsync(string usernameOrEmail);
+    Task<User> AddAsync(User user);
+    Task<User> UpdateAsync(User user);
+    Task<bool> DeleteAsync(int id);
+    Task<bool> ExistsWithUsernameAsync(string username);
+    Task<bool> ExistsWithEmailAsync(string email);
+}
