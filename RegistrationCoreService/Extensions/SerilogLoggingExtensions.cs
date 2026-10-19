@@ -23,7 +23,7 @@ public static class SerilogLoggingExtensions
                 .Enrich.FromLogContext()
                 .Enrich.WithMachineName()
                 .Enrich.WithSpan()
-                .Enrich.WithProperty("Application", "HW2");
+                .Enrich.WithProperty("Application", "RegistrationCoreService");
 
             if (!opensearch.Enabled)
             {
@@ -85,7 +85,7 @@ public static class SerilogLoggingExtensions
     {
         public bool Enabled { get; set; }
         public string[] NodeUris { get; set; } = ["http://localhost:9200"];
-        public string IndexFormat { get; set; } = "hw2-logs-{0:yyyy.MM.dd}";
+        public string IndexFormat { get; set; } = "rcs-logs-{0:yyyy.MM.dd}";
         public bool AutoRegisterTemplate { get; set; } = true;
         public bool DetectOpenSearchVersion { get; set; } = true;
         public int NumberOfShards { get; set; } = 1;
