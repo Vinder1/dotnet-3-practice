@@ -26,7 +26,7 @@ builder.Services.AddScoped<IApprovalRequestService, ApprovalRequestService>();
 
 builder.Services.AddHttpClient<IUserDirectoryClient, UserDirectoryClient>(client =>
 {
-    client.BaseAddress = new Uri(builder.Configuration["UsersService:BaseUrl"] ?? "http://localhost:5047");
+    client.BaseAddress = new Uri(builder.Configuration["UsersService:BaseUrl"] ?? throw new Exception("UsersService:BaseUrl not configured"));
     client.Timeout = TimeSpan.FromSeconds(10);
 });
 

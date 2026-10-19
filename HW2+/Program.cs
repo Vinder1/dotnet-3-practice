@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using HW2.Extensions;
 using HW2.Middlewares;
 using HW2.Models;
@@ -11,6 +12,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
+builder.Services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+
+builder.Services.Configure<Microsoft.AspNetCore.Mvc.JsonOptions>(options =>
+    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+
 builder.AddCustomSwagger();
 builder.AddCustomScalar();
 builder.AddCustomSerilog();
@@ -22,6 +29,12 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
+
+builder.Services.AddHttpClient<IApprovalServiceClient, ApprovalServiceClient>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["ApprovalService:BaseUrl"] ?? throw new Exception("ApprovalService:BaseUrl not configured"));
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
 
 builder.AddCustomAuthentication();
 

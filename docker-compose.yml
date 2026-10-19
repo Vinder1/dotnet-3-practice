@@ -16,6 +16,23 @@ services:
       timeout: 5s
       retries: 10
 
+  postgres-approval:
+    image: postgres:17
+    container_name: postgres-approval
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${APPROVAL_DB}
+    ports:
+      - "${APPROVAL_POSTGRES_PORT}:5432"
+    volumes:
+      - pgdata-approval:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${APPROVAL_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   opensearch:
     image: opensearchproject/opensearch:2.19.6
     container_name: opensearch
@@ -72,8 +89,9 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: ${APP_ENVIRONMENT:-Production}
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__DefaultConnection: Host=postgres;Port=${POSTGRES_PORT};Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
       Jwt__Key: ${JWT_SECRET_KEY}
+      ApprovalService__BaseUrl: "http://approval-service:8080"
       OpenSearch__Enabled: "true"
       OpenSearch__NodeUris__0: "http://opensearch:9200"
     ports:
@@ -85,7 +103,7 @@ services:
       dockerfile: Dockerfile
     container_name: approval-service
     depends_on:
-      postgres:
+      postgres-approval:
         condition: service_healthy
       opensearch:
         condition: service_healthy
@@ -94,7 +112,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: ${APP_ENVIRONMENT:-Production}
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__DefaultConnection: Host=postgres;Port=${POSTGRES_PORT};Database=${APPROVAL_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      ConnectionStrings__DefaultConnection: Host=postgres-approval;Port=5432;Database=${APPROVAL_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
       Jwt__Key: ${JWT_SECRET_KEY}
       UsersService__BaseUrl: "http://backend:8080"
       OpenSearch__Enabled: "true"
@@ -104,4 +122,5 @@ services:
 
 volumes:
   pgdata:
+  pgdata-approval:
   opensearchdata:
