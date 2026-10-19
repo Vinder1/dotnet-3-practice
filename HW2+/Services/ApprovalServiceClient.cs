@@ -4,6 +4,7 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using HW2.DTOs;
+using HW2.Exceptions;
 using Microsoft.AspNetCore.WebUtilities;
 
 namespace HW2.Services;
@@ -59,14 +60,14 @@ public sealed class ApprovalServiceClient(HttpClient httpClient, ILogger<Approva
 
         var url = query.Count == 0 ? BasePath : QueryHelpers.AddQueryString(BasePath, query);
 
-        var result = await SendAsync<ApprovalRequestResponse[]>(
-            HttpMethod.Get, url, accessToken, cancellationToken: cancellationToken);
+        var res = await SendAsync<ApprovalRequestResponse[]>(
+            HttpMethod.Get, url, accessToken, body: null, cancellationToken: cancellationToken);
 
         return new ApprovalServiceResult<IReadOnlyCollection<ApprovalRequestResponse>>
         {
-            StatusCode = result.StatusCode,
-            Value = result.Value,
-            ErrorBody = result.ErrorBody
+            ErrorBody = res.ErrorBody,
+            StatusCode = res.StatusCode,
+            Value = res.Value
         };
     }
 
@@ -76,7 +77,7 @@ public sealed class ApprovalServiceClient(HttpClient httpClient, ILogger<Approva
         CancellationToken cancellationToken = default)
     {
         return SendAsync<ApprovalRequestResponse>(
-            HttpMethod.Get, $"{BasePath}/{id}", accessToken, cancellationToken: cancellationToken);
+            HttpMethod.Get, $"{BasePath}/{id}", accessToken, null, cancellationToken: cancellationToken);
     }
 
     public Task<ApprovalServiceResult<ApprovalRequestResponse>> UpdateAsync(
@@ -114,31 +115,11 @@ public sealed class ApprovalServiceClient(HttpClient httpClient, ILogger<Approva
         int id,
         CancellationToken cancellationToken = default)
     {
-        var (statusCode, _, errorBody) = await SendCoreAsync<object>(
+        return await SendAsync<object>(
             HttpMethod.Delete, $"{BasePath}/{id}", accessToken, null, cancellationToken);
-
-        return new ApprovalServiceResult { StatusCode = statusCode, ErrorBody = errorBody };
     }
 
     private async Task<ApprovalServiceResult<T>> SendAsync<T>(
-        HttpMethod method,
-        string url,
-        string accessToken,
-        object? body = null,
-        CancellationToken cancellationToken = default)
-    {
-        var (statusCode, value, errorBody) = await SendCoreAsync<T>(
-            method, url, accessToken, body, cancellationToken);
-
-        return new ApprovalServiceResult<T>
-        {
-            StatusCode = statusCode,
-            Value = value,
-            ErrorBody = errorBody
-        };
-    }
-
-    private async Task<(HttpStatusCode StatusCode, T? Value, string? ErrorBody)> SendCoreAsync<T>(
         HttpMethod method,
         string url,
         string accessToken,
@@ -159,13 +140,11 @@ public sealed class ApprovalServiceClient(HttpClient httpClient, ILogger<Approva
             response = await _httpClient.SendAsync(
                 request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         }
-        catch (Exception exception) when (
-            exception is HttpRequestException
-            || (exception is TaskCanceledException && !cancellationToken.IsCancellationRequested))
+        catch (Exception exception)
         {
             _logger.LogError(
                 exception, "Approval service is unreachable while calling {Method} {Url}", method, url);
-            throw new HttpRequestException("Approval service is unavailable.", exception);
+            throw new MicroServiceUnavailableException("Approval service is unavailable.", exception);
         }
 
         using (response)
@@ -174,11 +153,21 @@ public sealed class ApprovalServiceClient(HttpClient httpClient, ILogger<Approva
             {
                 if (response.StatusCode == HttpStatusCode.NoContent)
                 {
-                    return (response.StatusCode, default, null);
+                    return new ApprovalServiceResult<T>
+                    {
+                        StatusCode = response.StatusCode,
+                        Value = default,
+                        ErrorBody = null
+                    };
                 }
 
                 var payload = await response.Content.ReadFromJsonAsync<T>(JsonOptions, cancellationToken);
-                return (response.StatusCode, payload, null);
+                return new ApprovalServiceResult<T>
+                {
+                    StatusCode = response.StatusCode,
+                    Value = payload,
+                    ErrorBody = null
+                };
             }
 
             var errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -189,7 +178,12 @@ public sealed class ApprovalServiceClient(HttpClient httpClient, ILogger<Approva
                 method,
                 url);
 
-            return (response.StatusCode, default, errorBody);
+            return new ApprovalServiceResult<T>
+            {
+                StatusCode = response.StatusCode,
+                Value = default,
+                ErrorBody = errorBody
+            };
         }
     }
 }

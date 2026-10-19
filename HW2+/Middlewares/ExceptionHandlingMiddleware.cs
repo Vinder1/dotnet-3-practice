@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using HW2.Exceptions;
 
 namespace HW2.Middlewares;
 
@@ -29,7 +30,7 @@ public sealed class ExceptionHandlingMiddleware(
             UnauthorizedAccessException => ((int)HttpStatusCode.Unauthorized, "Unauthorized"),
             InvalidOperationException => ((int)HttpStatusCode.Conflict, "Conflict"),
             ArgumentException => ((int)HttpStatusCode.BadRequest, "Bad request"),
-            HttpRequestException => ((int)HttpStatusCode.ServiceUnavailable, "Service unavailable"),
+            MicroServiceUnavailableException => ((int)HttpStatusCode.ServiceUnavailable, "Service unavailable"),
             OperationCanceledException => ((int)HttpStatusCode.RequestTimeout, "Request canceled"),
             _ => ((int)HttpStatusCode.InternalServerError, "Internal server error")
         };

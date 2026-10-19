@@ -4,13 +4,13 @@ using ApprovalService.Exceptions;
 
 namespace ApprovalService.Services;
 
-public class UserDirectoryClient(HttpClient httpClient, ILogger<UserDirectoryClient> logger)
-    : IUserDirectoryClient
+public class UserRepositoryClient(HttpClient httpClient, ILogger<UserRepositoryClient> logger)
+    : IUserRepositoryClient
 {
     private readonly HttpClient _httpClient = httpClient;
-    private readonly ILogger<UserDirectoryClient> _logger = logger;
+    private readonly ILogger<UserRepositoryClient> _logger = logger;
 
-    public async Task<UserDirectoryUser?> GetUserAsync(
+    public async Task<User?> GetUserAsync(
         int userId,
         string accessToken,
         CancellationToken cancellationToken = default)
@@ -26,7 +26,7 @@ public class UserDirectoryClient(HttpClient httpClient, ILogger<UserDirectoryCli
         catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException)
         {
             _logger.LogError(exception, "Users service is unreachable while resolving user {UserId}", userId);
-            throw new DependencyUnavailableException("Users service is unavailable.", exception);
+            throw new MicroServiceUnavailableException("Users service is unavailable.", exception);
         }
 
         if (response.StatusCode == HttpStatusCode.NotFound)
@@ -41,10 +41,10 @@ public class UserDirectoryClient(HttpClient httpClient, ILogger<UserDirectoryCli
                 "Users service returned status {StatusCode} while resolving user {UserId}",
                 (int)response.StatusCode,
                 userId);
-            throw new DependencyUnavailableException(
+            throw new MicroServiceUnavailableException(
                 $"Users service returned status code {(int)response.StatusCode}.");
         }
 
-        return await response.Content.ReadFromJsonAsync<UserDirectoryUser>(cancellationToken);
+        return await response.Content.ReadFromJsonAsync<User>(cancellationToken);
     }
 }

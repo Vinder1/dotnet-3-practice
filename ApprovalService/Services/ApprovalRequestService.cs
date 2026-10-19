@@ -7,11 +7,11 @@ namespace ApprovalService.Services;
 
 public class ApprovalRequestService(
     IApprovalRequestRepository repository,
-    IUserDirectoryClient userDirectoryClient,
+    IUserRepositoryClient userDirectoryClient,
     ILogger<ApprovalRequestService> logger) : IApprovalRequestService
 {
     private readonly IApprovalRequestRepository _repository = repository;
-    private readonly IUserDirectoryClient _userDirectoryClient = userDirectoryClient;
+    private readonly IUserRepositoryClient _userDirectoryClient = userDirectoryClient;
     private readonly ILogger<ApprovalRequestService> _logger = logger;
 
     public async Task<ApprovalRequestResponse> CreateAsync(

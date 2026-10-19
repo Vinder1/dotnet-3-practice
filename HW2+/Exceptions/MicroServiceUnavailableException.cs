@@ -1,0 +1,4 @@
+namespace HW2.Exceptions;
+
+public sealed class MicroServiceUnavailableException(string message, Exception? innerException = null)
+    : Exception(message, innerException);

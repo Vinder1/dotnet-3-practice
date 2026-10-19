@@ -30,7 +30,7 @@ public sealed class ExceptionHandlingMiddleware(
             UnauthorizedAccessException => ((int)HttpStatusCode.Unauthorized, "Unauthorized"),
             ForbiddenException => ((int)HttpStatusCode.Forbidden, "Forbidden"),
             InvalidOperationException => ((int)HttpStatusCode.Conflict, "Conflict"),
-            DependencyUnavailableException => ((int)HttpStatusCode.ServiceUnavailable, "Dependency unavailable"),
+            MicroServiceUnavailableException => ((int)HttpStatusCode.ServiceUnavailable, "Dependency unavailable"),
             ArgumentException => ((int)HttpStatusCode.BadRequest, "Bad request"),
             OperationCanceledException => ((int)HttpStatusCode.RequestTimeout, "Request canceled"),
             _ => ((int)HttpStatusCode.InternalServerError, "Internal server error")

@@ -24,7 +24,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<IApprovalRequestRepository, ApprovalRequestRepository>();
 builder.Services.AddScoped<IApprovalRequestService, ApprovalRequestService>();
 
-builder.Services.AddHttpClient<IUserDirectoryClient, UserDirectoryClient>(client =>
+builder.Services.AddHttpClient<IUserRepositoryClient, UserRepositoryClient>(client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["UsersService:BaseUrl"] ?? throw new Exception("UsersService:BaseUrl not configured"));
     client.Timeout = TimeSpan.FromSeconds(10);
