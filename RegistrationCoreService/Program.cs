@@ -7,6 +7,7 @@ using RegistrationCoreService.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
+using OllamaSharp;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,7 +35,11 @@ builder.Services.AddHttpClient<IApprovalServiceClient, ApprovalServiceClient>(cl
 {
     client.BaseAddress = new Uri(builder.Configuration["ApprovalService:BaseUrl"] ?? throw new Exception("ApprovalService:BaseUrl not configured"));
     client.Timeout = TimeSpan.FromSeconds(10);
-});
+}); 
+
+var ollamaUri = new Uri("http://localhost:11434");
+var defaultModel = "qwen3.5:9b";
+builder.Services.AddChatClient(new OllamaApiClient(ollamaUri, defaultModel));
 
 builder.AddCustomAuthentication();
 
